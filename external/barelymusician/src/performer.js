@@ -1,0 +1,104 @@
+import {CommandType} from './command.js'
+
+/**
+ * A representation of a musical performer that can perform rhythmic tasks in real-time.
+ */
+export class Performer {
+  /**
+   * @param {!Engine} engine
+   * @param {number} handle
+   */
+  constructor(engine, handle) {
+    /** @private @const {!Engine} */
+    this._engine = engine;
+
+    /** @private @const {number} */
+    this._handle = handle;
+
+    /** @private {boolean} */
+    this._isPlaying = false;
+
+    /** @private {number} */
+    this._position = 0.0;
+  }
+
+  /** Destroys the performer. */
+  destroy() {
+    this._engine._performers.delete(this._handle);
+    this._engine._pushCommand({type: CommandType.PERFORMER_DESTROY, handle: this._handle});
+  }
+
+  /** @param {boolean} isLooping */
+  setLooping(isLooping) {
+    this._engine._pushCommand(
+        {type: CommandType.PERFORMER_SET_LOOPING, handle: this._handle, isLooping});
+  }
+
+  /** @param {number} loopBeginPosition */
+  setLoopBeginPosition(loopBeginPosition) {
+    this._engine._pushCommand({
+      type: CommandType.PERFORMER_SET_LOOP_BEGIN_POSITION,
+      handle: this._handle,
+      loopBeginPosition,
+    });
+  }
+
+  /** @param {number} loopLength */
+  setLoopLength(loopLength) {
+    this._engine._pushCommand(
+        {type: CommandType.PERFORMER_SET_LOOP_LENGTH, handle: this._handle, loopLength});
+  }
+
+  /** @param {number} position */
+  setPosition(position) {
+    this._position = position;
+    this._engine._pushCommand(
+        {type: CommandType.PERFORMER_SET_POSITION, handle: this._handle, position});
+  }
+
+  /** @param {number} speed */
+  setSpeed(speed) {
+    this._engine._pushCommand({type: CommandType.PERFORMER_SET_SPEED, handle: this._handle, speed});
+  }
+
+  /** Starts the playback. */
+  start() {
+    this._isPlaying = true;
+    this._engine._pushCommand({type: CommandType.PERFORMER_START, handle: this._handle});
+  }
+
+  /** Stops the playback. */
+  stop() {
+    this._isPlaying = false;
+    this._engine._pushCommand({type: CommandType.PERFORMER_STOP, handle: this._handle});
+  }
+
+  /**
+   * Syncs the performer position to another performer with an optional offset.
+   * @param {!Performer} otherPerformer
+   * @param {number=} offset
+   */
+  syncTo(otherPerformer, offset = 0.0) {
+    this._engine._pushCommand({
+      type: CommandType.PERFORMER_SYNC_TO,
+      handle: this._handle,
+      otherHandle: otherPerformer._handle,
+      offset,
+    });
+  }
+
+  /** @return {number} */
+  get handle() {
+    return this._handle;
+  }
+
+  /** @return {boolean} */
+  get isPlaying() {
+    return this._isPlaying;
+  }
+
+  /** @return {number} */
+  get position() {
+    return this._position;
+  }
+}

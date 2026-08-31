@@ -1,0 +1,13 @@
+{
+  "name": "anokta.io",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:bundle": "esbuild src/main.js --minify --bundle --outfile=build/bundle.js --format=esm",
+    "build:processor": "esbuild external/barelymusician/src/processor.js --minify --bundle --outfile=build/processor.js --format=esm",
+    "build": "npm run build:bundle && npm run build:processor && node src/postbuild.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0"
+  }
+}

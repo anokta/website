@@ -1,0 +1,12 @@
+# Build artifacts.
+build/
+
+# macOS.
+.DS_Store
+
+# VS Code.
+.vscode/*
+!.vscode/cpp.code-snippets
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json

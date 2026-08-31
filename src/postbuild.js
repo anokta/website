@@ -1,0 +1,83 @@
+const fs = require('fs').promises;
+const path = require('path');
+const {execSync} = require('child_process');
+
+(async () => {
+  const rootDir = path.join(__dirname, '..');
+  const demoDir = path.join(rootDir, '.');
+
+  const buildDir = path.join(rootDir, 'build');
+  await fs.mkdir(buildDir, {recursive: true});
+
+  // Copy data directory.
+  execSync(`cp -r "${path.join(demoDir, 'data')}" "${buildDir}"`);
+
+  // Copy index.html
+  const indexPath = path.join(demoDir, 'index.html');
+  try {
+    let index = await fs.readFile(indexPath, 'utf8');
+    index = index.replace(/src\/main\.js/g, 'bundle.js');
+    await fs.writeFile(path.join(buildDir, 'index.html'), index, 'utf8');
+  } catch (err) {
+    console.error('failed to copy index.html:', err.message);
+  }
+
+  // Copy style.css
+  const cssSrc = path.join(demoDir, 'style.css');
+  try {
+    await fs.copyFile(cssSrc, path.join(buildDir, 'style.css'));
+  } catch (err) {
+    console.error('failed to copy style.css:', err.message);
+  }
+
+  // Replace processor.js path
+  const bundlePath = path.join(buildDir, 'bundle.js');
+  try {
+    let bundle = await fs.readFile(bundlePath, 'utf8');
+    const originalPath = '../external/barelymusician/src/processor.js';
+    if (bundle.includes(originalPath)) {
+      bundle = bundle.split(originalPath).join('./processor.js');
+      await fs.writeFile(bundlePath, bundle, 'utf8');
+    } else {
+      console.error('failed to find processor.js path');
+    }
+  } catch (err) {
+    console.error('failed to replace processor.js path', err.message);
+  }
+
+  // Add build info into index.html
+  async function addBuildInfo(indexDir) {
+    try {
+      let index = await fs.readFile(indexDir, 'utf8');
+
+      // Gather build info.
+      let sha = '';
+      try {
+        sha = execSync('git rev-parse --short HEAD', {cwd: rootDir}).toString().trim();
+      } catch (err) {
+        console.error('failed to fetch sha: ', err);
+      }
+
+      const escapeHtml = (s) => s.replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/"/g, '&quot;');
+
+      const timestamp = new Date().toISOString();
+      const buildInfo = escapeHtml(`${sha} • ${timestamp}`);
+
+      // Add meta tag.
+      index = index.replace(/<\/head>/i, `<meta name="build" content="${buildInfo}">\n</head>`);
+
+      // Add build info.
+      index = index.replace(
+          /(<div[^>]*class=["']about["'][^>]*>)([\s\S]*?)(<\/div>)/i,
+          `$1$2\n <small class="build">${buildInfo}</small>\n  $3`);
+
+      await fs.writeFile(indexDir, index, 'utf8');
+    } catch (err) {
+      console.error('failed to add build info:', err.message);
+    }
+  }
+  await addBuildInfo(path.join(buildDir, 'index.html'));
+})();
